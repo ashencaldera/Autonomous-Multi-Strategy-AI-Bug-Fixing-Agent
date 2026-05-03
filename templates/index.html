@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BugFixAI — Autonomous Agent</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">⚡</span>
+      <span class="logo-text">BugFix<span class="logo-ai">AI</span></span>
+    </div>
+    <div class="header-meta">
+      <span class="badge badge-agent">Autonomous Agent</span>
+      <span class="badge badge-model">Groq · LLaMA 3.3 70B</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── Layout ── -->
+<main class="layout">
+
+  <!-- ════ LEFT PANEL: Input ════ -->
+  <section class="panel panel-input">
+    <div class="panel-header">
+      <h2 class="panel-title"><span class="panel-icon">📝</span> Buggy Code Input</h2>
+      <div class="btn-group">
+        <button class="btn btn-ghost btn-sm" id="btn-examples">Examples ▾</button>
+        <button class="btn btn-ghost btn-sm" id="btn-clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="editor-wrapper">
+      <div class="line-numbers" id="line-numbers">1</div>
+      <textarea id="code-input" class="code-editor"
+        placeholder="# Paste your buggy Python code here…
+# The agent will:
+#   1. Execute and capture the error
+#   2. Analyse the root cause with AI
+#   3. Generate 4 candidate fixes
+#   4. Test and score each one
+#   5. Return the best working solution
+
+def add(a, b)
+    return a + b
+
+print(add(2, 3))"
+        spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+    </div>
+
+    <div class="input-footer">
+      <div class="char-count" id="char-count">0 / 5000</div>
+      <button class="btn btn-primary" id="btn-fix">
+        <span class="btn-icon">🤖</span> Fix My Code
+      </button>
+    </div>
+  </section>
+
+  <!-- ════ RIGHT PANEL: Agent Activity ════ -->
+  <section class="panel panel-output">
+
+    <div class="panel-header">
+      <h2 class="panel-title"><span class="panel-icon">🧠</span> Neural Agent Activity</h2>
+      <div id="status-badge" class="badge badge-idle">Idle</div>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps-container" id="steps-container">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">🤖</div>
+        <p>Submit your code to watch the agent work in real-time.</p>
+        <p class="empty-sub">Execute → Analyse → Reflect → Generate fixes → Validate → Select best</p>
+      </div>
+    </div>
+
+    <!-- Error analysis -->
+    <div class="card hidden" id="error-card">
+      <div class="card-header">
+        <span class="card-icon">🔍</span>
+        <span class="card-title">Error Analysis</span>
+        <span id="error-type-badge" class="badge"></span>
+      </div>
+      <div class="card-body">
+        <p id="error-plain-english" class="error-explanation"></p>
+        <div class="meta-row">
+          <span class="meta-label">Root Cause</span>
+          <span id="error-root-cause" class="meta-value"></span>
+        </div>
+        <div id="error-hints" class="hint-list"></div>
+      </div>
+    </div>
+
+    <!-- Candidates -->
+    <div class="card hidden" id="candidates-card">
+      <div class="card-header">
+        <span class="card-icon">🧪</span>
+        <span class="card-title">Fix Candidates</span>
+        <span id="candidates-count" class="badge badge-neutral">0 candidates</span>
+      </div>
+      <div id="candidates-grid" class="candidates-grid"></div>
+    </div>
+
+    <!-- Reflection -->
+    <div class="card hidden" id="reflection-card">
+      <div class="card-header">
+        <span class="card-icon">💭</span>
+        <span class="card-title">Agent Reflection</span>
+      </div>
+      <div class="card-body">
+        <p id="reflection-text" class="reflection-text"></p>
+        <p id="reflection-approach" class="reflection-approach"></p>
+      </div>
+    </div>
+
+    <!-- ══ FINAL RESULT ══ -->
+    <div class="result-panel hidden" id="result-panel">
+      <div class="result-inner">
+
+        <!-- Result header -->
+        <div class="result-header" id="result-header">
+          <div class="result-header-left">
+            <span id="result-icon" class="result-icon">✅</span>
+            <div>
+              <div id="result-title" class="result-title">Bug Fixed!</div>
+              <div id="result-explanation" class="result-subtitle"></div>
+            </div>
+          </div>
+          <div class="result-header-right">
+            <span id="result-strategy" class="badge"></span>
+            <span id="result-score" class="badge badge-score"></span>
+          </div>
+        </div>
+
+        <!-- Diff view: buggy vs fixed side by side -->
+        <div class="diff-container" id="diff-container">
+          <div class="diff-pane diff-pane-old">
+            <div class="diff-pane-header">
+              <span class="diff-label diff-label-old">⚠ Buggy Code</span>
+              <span class="diff-lines-count" id="diff-removed-count"></span>
+            </div>
+            <pre class="diff-code" id="diff-old"></pre>
+          </div>
+          <div class="diff-divider"></div>
+          <div class="diff-pane diff-pane-new">
+            <div class="diff-pane-header">
+              <span class="diff-label diff-label-new">✓ Fixed Code</span>
+              <span class="diff-lines-count" id="diff-added-count"></span>
+            </div>
+            <pre class="diff-code" id="diff-new"></pre>
+          </div>
+        </div>
+
+        <!-- Full fixed code block -->
+        <div class="result-code-block">
+          <div class="code-toolbar">
+            <span class="code-label">✦ Complete Fixed Code</span>
+            <div class="btn-group">
+              <button class="btn btn-ghost btn-sm" id="btn-use-fix">⬆ Use This Fix</button>
+              <button class="btn btn-ghost btn-sm" id="btn-copy">📋 Copy</button>
+            </div>
+          </div>
+          <div class="code-with-lines">
+            <div class="result-line-numbers" id="result-line-numbers"></div>
+            <pre id="result-code" class="result-code"></pre>
+          </div>
+        </div>
+
+        <!-- Output -->
+        <div class="result-output-block hidden" id="result-output-block">
+          <div class="code-toolbar">
+            <span class="code-label">▶ Program Output</span>
+          </div>
+          <pre id="result-output" class="result-output"></pre>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="result-stats" id="result-stats"></div>
+
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<!-- Progress bar -->
+<div class="progress-bar-wrap" id="progress-bar-wrap">
+  <div class="progress-bar" id="progress-bar"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast hidden" id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
